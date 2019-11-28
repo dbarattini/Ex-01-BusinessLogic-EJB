@@ -52,3 +52,12 @@ target/
 out/
 .idea/
 build/
+
+.gradle/5.6/
+demo.iml
+
+# cfg files #
+src/main/resources/hibernate.cfg
+src/main/application/META-INF/persistence.xml
+
+
