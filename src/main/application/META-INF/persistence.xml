@@ -19,7 +19,7 @@
         <validation-mode>CALLBACK</validation-mode>
         <properties>
             <!-- DB information -->
-            <property name="hibernate.connection.url" value="jdbc:mysql://localhost:3306/shopping"/> <!-- shopping DB -->
+            <property name="hibernate.connection.url" value="jdbc:mysql://localhost:3306/shopping?serverTimezone=UTC"/> <!-- shopping DB -->
             <property name="hibernate.connection.username" value="root"/>
             <property name="hibernate.connection.password" value="password"/>
 

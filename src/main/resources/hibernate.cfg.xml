@@ -7,7 +7,7 @@
  <session-factory>
 
      <!-- DB information -->
-    <property name="connection.url">jdbc:mysql://localhost:3306/shopping</property> <!-- shopping db -->
+    <property name="connection.url">jdbc:mysql://localhost:3306/shopping?serverTimezone=UTC</property> <!-- shopping db -->
      <!-- senza serverTimezone con windows 10 da problemi a connettersi con il database -->
     <property name="connection.username">root</property>
     <property name="connection.password">password</property>

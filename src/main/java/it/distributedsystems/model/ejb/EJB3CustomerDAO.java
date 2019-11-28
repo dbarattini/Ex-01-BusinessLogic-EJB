@@ -23,7 +23,6 @@ public class EJB3CustomerDAO implements CustomerDAO {
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public int insertCustomer(Customer customer) {
         em.persist(customer);
-        em.flush();
         return customer.getId();
     }
 
