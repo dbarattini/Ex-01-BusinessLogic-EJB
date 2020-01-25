@@ -1,169 +1,129 @@
 <%@ page session ="true"%>
 <%@ page import="java.util.*" %>
 <%@ page import="it.distributedsystems.model.dao.*" %>
+<%@ page import="javax.naming.InitialContext" %>
+<%@ page import="javax.naming.NamingException" %>
 
-
-<%!
-	String printTableRow(Product product, String url) {
-		StringBuffer html = new StringBuffer();
-		html
-				.append("<tr>")
-				.append("<td>")
-				.append(product.getName())
-				.append("</td>")
-
-				.append("<td>")
-				.append(product.getProductNumber())
-				.append("</td>")
-
-				.append("<td>")
-				.append( (product.getProducer() == null) ? "n.d." : product.getProducer().getName() )
-				.append("</td>");
-
-		html
-				.append("</tr>");
-
-		return html.toString();
-	}
-
-	String printTableRows(List products, String url) {
-		StringBuffer html = new StringBuffer();
-		Iterator iterator = products.iterator();
-		while ( iterator.hasNext() ) {
-			html.append( printTableRow( (Product) iterator.next(), url ) );
-		}
-		return html.toString();
-	}
-%>
 
 <html>
 
-	<head>
-		<title>HOMEPAGE DISTRIBUTED SYSTEM EJB</title>
-	
-		<meta http-equiv="Pragma" content="no-cache"/>
-		<meta http-equiv="Expires" content="Mon, 01 Jan 1996 23:59:59 GMT"/>
-		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-		<meta name="Author" content="you">
+<head>
+    <title>Customer Test Page</title>
 
-		<link rel="StyleSheet" href="styles/default.css" type="text/css" media="all" />
-	
-	</head>
-	
-	<body>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="Mon, 01 Jan 1996 23:59:59 GMT"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <meta name="Author" content="you">
 
-	<%
-		// can't use builtin object 'application' while in a declaration!
-		// must be in a scriptlet or expression!
-		DAOFactory daoFactory = DAOFactory.getDAOFactory( application.getInitParameter("dao") );
-		CustomerDAO customerDAO = daoFactory.getCustomerDAO();
-		PurchaseDAO purchaseDAO = daoFactory.getPurchaseDAO();
-		ProductDAO productDAO = daoFactory.getProductDAO();
-		ProducerDAO producerDAO = daoFactory.getProducerDAO();
+    <link rel="StyleSheet" href="styles/default.css" type="text/css" media="all" />
 
-		String operation = request.getParameter("operation");
-		if ( operation != null && operation.equals("insertCustomer") ) {
-			Customer customer = new Customer();
-			customer.setName( request.getParameter("name") );
-			int id = customerDAO.insertCustomer( customer );
-			out.println("<!-- inserted customer '" + customer.getName() + "', with id = '" + id + "' -->");
-		}
-		else if ( operation != null && operation.equals("insertProducer") ) {
-			Producer producer = new Producer();
-			producer.setName( request.getParameter("name") );
-			int id = producerDAO.insertProducer( producer );
-			out.println("<!-- inserted producer '" + producer.getName() + "', with id = '" + id + "' -->");
-		}
-		else if ( operation != null && operation.equals("insertProduct") ) {
-			Product product = new Product();
-			product.setName( request.getParameter("name") );
-			product.setProductNumber(Integer.parseInt(request.getParameter("number")));
+</head>
 
-			Producer producer = producerDAO.findProducerByName(request.getParameter("producer"));
-			product.setProducer(producer);
-			int id = productDAO.insertProduct(product);
-			out.println("<!-- inserted product '" + product.getName() + "' with id = '" + id + "' -->");
-		}
+<body>
 
-		//Da aggiungere la possibilità di fare un ordine in sessione e di finalizzarla per creare un purchase.
-	%>
+<%
+    // can't use builtin object 'application' while in a declaration!
+    // must be in a scriptlet or expression!
+    DAOFactory daoFactory = DAOFactory.getDAOFactory( application.getInitParameter("dao") );
+    CustomerDAO customerDAO = daoFactory.getCustomerDAO();
+    ProductDAO productDAO = daoFactory.getProductDAO();
+    ShoppingCart cart = (ShoppingCart) session.getAttribute("cart");
+    if(cart == null) {
+        InitialContext context = new InitialContext();
+        cart = (ShoppingCart) context.lookup("java:global/distributed-systems-demo/distributed-systems-demo.war/EJB3ShoppingCart!it.distributedsystems.model.dao.ShoppingCart");
+        session.setAttribute("cart", cart);
+    }
+    String operation = request.getParameter("operation");
+
+    if (operation != null && operation.equals("addProduct")) {
+        Product product = productDAO.findProductById(Integer.parseInt(request.getParameter("product")));
+        cart.addProduct(product);
+        out.println("<!-- added product " + product.getName()+ " -->");
+    } else if (operation != null && operation.equals("buy")) {
+        Customer customer = customerDAO.findCustomerByName(request.getParameter("customer"));
+        cart.setCustomer(customer);
+        cart.buy();
+        out.println("<!--  buy -->");
+        session.invalidate();
+    }
+%>
 
 
-	<h1>Customer Manager</h1>
+<h1>Shopping Cart</h1>
+<%
+    List products = productDAO.getAllProducts();
+    List customers = customerDAO.getAllCustomers();
+    Iterator iterator;
+    if ( products.size() > 0 && customers.size() > 0) {
+%>
+<div>
+    <p>Customer:</p>
+    <form>
+        <select name="customer">
+            <%
+                iterator = customers.iterator();
+                while ( iterator.hasNext() ) {
+                    Customer customer = (Customer) iterator.next();
+            %>
+            <option value="<%= customer.getName() %>"><%= customer.getName()%></option>
+            <%
+                }
+            %>
+        </select>
+    </form>
+    <p>Add Product:</p>
+    <form>
+        <select name="product">
+            <%
+                iterator = products.iterator();
+                while ( iterator.hasNext() ) {
+                    Product product = (Product) iterator.next();
+                    if(product.getPurchase() == null) {
+            %>
+            <option value="<%= product.getId() %>"><%= product.getName()%></option>
+            <%
+                    }
+                }// end while
+            %>
+            <input type="hidden" name="operation" value="addProduct"/>
+            <input type="submit" name="submit" value="Add"/>
+        </select>
+    </form>
+</div>
+<%
+    } else {
+        out.println("No Costumer or Product registered");
+    }
+%>
 
-	<div>
-		<p>Add Customer:</p>
-		<form>
-			Name: <input type="text" name="name"/><br/>
-			<input type="hidden" name="operation" value="insertCustomer"/>
-			<input type="submit" name="submit" value="submit"/>
-		</form>
-	</div>
+<% if(operation != null && !operation.equals("buy")) { %>
+<div>
 
-	<div>
-		<p>Add Producer:</p>
-		<form>
-			Name: <input type="text" name="name"/><br/>
-			<input type="hidden" name="operation" value="insertProducer"/>
-			<input type="submit" name="submit" value="submit"/>
-		</form>
-	</div>
+    <p>Current purchase information:<br>
+        <%
+            if(cart.getProducts().size()>0) {
+        %><br>Products:<br><%
+            iterator = cart.getProducts().iterator();
+            while(iterator.hasNext()){
+                Product p = (Product) iterator.next();
+        %><%=p.getName()%><br><%
+                }
+            }
+        %>
+    </p>
+    </br>
+    <form>
+        <input type="hidden" name="operation" value="buy" />
+        <input type="submit" name="submit" value="Buy" />
+    </form>
 
-	<div>
-		<p>Add Product:</p>
-		<form>
-			Name: <input type="text" name="name"/><br/>
-			Product Number: <input type="text" name="number"/><br/>
-			<input type="hidden" name="operation" value="insertProduct"/>
-			<input type="submit" name="submit" value="submit"/>
-		</form>
-	</div>
-	<%
-		List producers = producerDAO.getAllProducers();
-		if ( producers.size() > 0 ) {
-	%>
-	<div>
-		<p>Add Product:</p>
-		<form>
-			Name: <input type="text" name="name"/><br/>
-			Product Number: <input type="text" name="number"/><br/>
-			Producers: <select name="producer">
-			<%
-				Iterator iterator = producers.iterator();
-				while ( iterator.hasNext() ) {
-					Producer producer = (Producer) iterator.next();
-			%>
-			<option value="<%= producer.getName() %>"><%= producer.getName()%></option>
-			<%
-				}// end while
-			%>
+</div>
+<%}%>
 
-			<input type="hidden" name="operation" value="insertProduct"/>
-			<input type="submit" name="submit" value="submit"/>
-		</form>
-	</div>
-	<%
-	}// end if
-	else {
-	%>
-	<div>
-		<p>At least one Producer must be present to add a new Product.</p>
-	</div>
-	<%
-		} // end else
-	%>
-	<div>
-		<p>Products currently in the database:</p>
-		<table>
-			<tr><th>Name</th><th>ProductNumber</th><th>Publisher</th><th></th></tr>
-			<%= printTableRows( productDAO.getAllProducts(), request.getContextPath() ) %>
-		</table>
-	</div>
+<div>
+    <a href="<%= request.getContextPath() %>">Ricarica lo stato iniziale di questa pagina</a><br>
+</div>
 
-	<div>
-		<a href="<%= request.getContextPath() %>">Ricarica lo stato iniziale di questa pagina</a>
-	</div>
-
-	</body>
+</body>
 
 </html>
