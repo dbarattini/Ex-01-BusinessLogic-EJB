@@ -35,15 +35,18 @@
     }
     String operation = request.getParameter("operation");
 
-    if (operation != null && operation.equals("addProduct")) {
+    if ( operation != null && operation.equals("setCustomer") ) {
+        Customer customer = customerDAO.findCustomerByName(request.getParameter("customer"));
+        cart.setCustomer(customer);
+        out.println("<!-- customer " + customer.getName() + " setted -->");
+    }
+    else if (operation != null && operation.equals("addProduct")) {
         Product product = productDAO.findProductById(Integer.parseInt(request.getParameter("product")));
         cart.addProduct(product);
         out.println("<!-- added product " + product.getName()+ " -->");
     } else if (operation != null && operation.equals("buy")) {
-        Customer customer = customerDAO.findCustomerByName(request.getParameter("customer"));
-        cart.setCustomer(customer);
-        cart.buy();
-        out.println("<!--  buy -->");
+        int id = cart.buy();
+        out.println("<!--  purchase id = " + id + " -->");
         session.invalidate();
     }
 %>
@@ -69,6 +72,8 @@
             <%
                 }
             %>
+            <input type="hidden" name="operation" value="setCustomer"/>
+            <input type="submit" name="submit" value="Set"/>
         </select>
     </form>
     <p>Add Product:</p>
@@ -122,6 +127,7 @@
 
 <div>
     <a href="<%= request.getContextPath() %>">Ricarica lo stato iniziale di questa pagina</a><br>
+    <a href="admin.jsp">Admin page</a>
 </div>
 
 </body>

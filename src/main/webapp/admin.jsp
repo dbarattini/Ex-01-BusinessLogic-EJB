@@ -162,6 +162,7 @@
 
 	<div>
 		<a href="<%= request.getContextPath() %>">Ricarica lo stato iniziale di questa pagina</a>
+        <a href="index.jsp">Shopping Cart page</a>
 	</div>
 
 	</body>
